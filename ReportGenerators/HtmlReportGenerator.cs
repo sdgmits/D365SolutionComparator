@@ -1,5 +1,6 @@
 using System.Text;
 using D365SolutionComparator.Models;
+using Newtonsoft.Json;
 
 namespace D365SolutionComparator.ReportGenerators;
 
@@ -502,7 +503,7 @@ public class HtmlReportGenerator : IReportGenerator
         var securityRoles = result.ChildComparisons.Where(c => c.ComponentType == "SecurityRole").OrderBy(s => s.ComponentName).ToList();
         if (securityRoles.Any())
         {
-            GenerateSimpleComponentTab(html, "securityroles", "🔒 Security Roles", securityRoles);
+            GenerateSecurityRolesTab(html, "securityroles",  "🔒 Security Roles", securityRoles, result);
         }
         
         // App Modules tab
@@ -547,6 +548,147 @@ public class HtmlReportGenerator : IReportGenerator
         
         html.AppendLine("            </ul>");
         html.AppendLine("        </div>");
+    }
+    
+    private void GenerateSecurityRolesTab(StringBuilder html, string tabId, string title, List<ComparisonResult> roles, ComparisonResult parentResult)
+    {
+        var solution1Name = GetSolutionName(parentResult.Source1Path);
+        var solution2Name = GetSolutionName(parentResult.Source2Path);
+        
+        html.AppendLine($"        <div id='{tabId}' class='tab-content'>");
+        html.AppendLine($"            <h2>{title}</h2>");
+        
+        // Add legend at the top
+        html.AppendLine("            <div class='privilege-legend'>");
+        html.AppendLine("                <h4>Permission Levels:</h4>");
+        html.AppendLine("                <div class='legend-items'>");
+        html.AppendLine("                    <span class='legend-item'><span class='permission-circle level-none'></span> None</span>");
+        html.AppendLine("                    <span class='legend-item'><span class='permission-circle level-user'></span> User</span>");
+        html.AppendLine("                    <span class='legend-item'><span class='permission-circle level-businessunit'></span> Business Unit</span>");
+        html.AppendLine("                    <span class='legend-item'><span class='permission-circle level-parentchildbusinessunit'></span> Parent: Child BU</span>");
+        html.AppendLine("                    <span class='legend-item'><span class='permission-circle level-organization'></span> Organization</span>");
+        html.AppendLine("                </div>");
+        html.AppendLine("            </div>");
+        
+        html.AppendLine("            <ul class='component-list'>");
+        
+        foreach (var role in roles)
+        {
+            var icon = GetChangeIcon(role.ChangeType);
+            var cssClass = role.ChangeType.ToString().ToLower();
+            var roleId = EscapeForId(role.ComponentName);
+            
+            html.AppendLine($"                <li class='{cssClass}'>");
+            html.AppendLine($"                    <strong>{icon} {role.ComponentName}</strong>");
+            
+            // Check if this role has privilege details
+            if (role.PropertyChanges.ContainsKey("PrivilegeDetails") && role.PropertyChanges["PrivilegeDetails"].IsDifferent)
+            {
+                var privilegeJson = role.PropertyChanges["PrivilegeDetails"].SourceValue ?? "{}";
+                var changedCount = role.PropertyChanges["PrivilegeDetails"].TargetValue ?? "0";
+                
+                html.AppendLine($"                    <div class='privilege-toggle-container'>");
+                html.AppendLine($"                        <button class='view-privileges-btn' onclick='togglePrivilegeDetails(\"{roleId}\")'>👁️ View Privilege Changes ({changedCount})</button>");
+                html.AppendLine($"                    </div>");
+                
+                // Create expandable privilege details section
+                html.AppendLine($"                    <div id='privileges_{roleId}' class='privilege-details-container' style='display: none;'>");
+                html.AppendLine("                        <div class='privilege-table-wrapper'>");
+                html.AppendLine("                            <table class='privilege-comparison-table'>");
+                html.AppendLine("                                <thead>");
+                html.AppendLine("                                    <tr>");
+                html.AppendLine("                                        <th>Privilege Name</th>");
+                html.AppendLine($"                                        <th>{EscapeHtml(solution1Name)}</th>");
+                html.AppendLine($"                                        <th>{EscapeHtml(solution2Name)}</th>");
+                html.AppendLine("                                    </tr>");
+                html.AppendLine("                                </thead>");
+                html.AppendLine("                                <tbody>");
+                
+                // Parse and render privilege changes directly
+                var privilegeChanges = JsonConvert.DeserializeObject<Dictionary<string, (string, string)>>(privilegeJson);
+                if (privilegeChanges != null)
+                {
+                    foreach (var priv in privilegeChanges.OrderBy(p => p.Key))
+                    {
+                        var privilegeName = priv.Key.Replace("prv", "");
+                        // Add spaces before capital letters
+                        privilegeName = System.Text.RegularExpressions.Regex.Replace(privilegeName, "([A-Z])", " $1").Trim();
+                        
+                        var sourceLevel = priv.Value.Item1;
+                        var targetLevel = priv.Value.Item2;
+                        
+                        html.AppendLine("                                    <tr class='privilege-changed'>");
+                        html.AppendLine($"                                        <td><strong>{EscapeHtml(privilegeName)}</strong></td>");
+                        html.AppendLine($"                                        <td><div class='privilege-level-cell'>");
+                        html.AppendLine($"                                            <span class='permission-circle {GetPermissionCircleClass(sourceLevel)}'></span>");
+                        html.AppendLine($"                                            <span>{EscapeHtml(sourceLevel)}</span>");
+                        html.AppendLine($"                                        </div></td>");
+                        html.AppendLine($"                                        <td><div class='privilege-level-cell'>");
+                        html.AppendLine($"                                            <span class='permission-circle {GetPermissionCircleClass(targetLevel)}'></span>");
+                        html.AppendLine($"                                            <span>{EscapeHtml(targetLevel)}</span>");
+                        html.AppendLine($"                                        </div></td>");
+                        html.AppendLine("                                    </tr>");
+                    }
+                }
+                
+                html.AppendLine("                                </tbody>");
+                html.AppendLine("                            </table>");
+                html.AppendLine("                        </div>");
+                html.AppendLine("                    </div>");
+            }
+            
+            if (role.PropertyChanges.Any(p => p.Value.IsDifferent && p.Key != "PrivilegeDetails"))
+            {
+                html.AppendLine("                    <ul class='property-list'>");
+                foreach (var prop in role.PropertyChanges.Where(p => p.Value.IsDifferent && p.Key != "PrivilegeDetails"))
+                {
+                    html.AppendLine("                        <li>");
+                    html.AppendLine($"                            <strong>{prop.Key}:</strong> ");
+                    html.AppendLine($"                            <span class='source-value'>{EscapeHtml(prop.Value.SourceValue)}</span>");
+                    html.AppendLine($"                            <span class='arrow'>→</span>");
+                    html.AppendLine($"                            <span class='target-value'>{EscapeHtml(prop.Value.TargetValue)}</span>");
+                    html.AppendLine("                        </li>");
+                }
+                html.AppendLine("                    </ul>");
+            }
+            
+            html.AppendLine("                </li>");
+        }
+        
+        html.AppendLine("            </ul>");
+        html.AppendLine("        </div>");
+    }
+    
+    private string GetPermissionCircleClass(string level)
+    {
+        if (string.IsNullOrEmpty(level)) return "level-none";
+        
+        var levelLower = level.ToLower().Replace(" ", "").Replace(":", "");
+        
+        return levelLower switch
+        {
+            "none" => "level-none",
+            "user" => "level-user",
+            "basic" => "level-user",
+            "local" => "level-businessunit",
+            "businessunit" => "level-businessunit",
+            "deep" => "level-parentchildbusinessunit",
+            "parentchildbusinessunit" => "level-parentchildbusinessunit",
+            "parentchildbusinessunits" => "level-parentchildbusinessunit",
+            "organization" => "level-organization",
+            "global" => "level-organization",
+            _ => "level-none"
+        };
+    }
+    
+    private string EscapeForJs(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return "";
+        return input.Replace("\\", "\\\\")
+                   .Replace("\"", "\\\"")
+                   .Replace("'", "\\'")
+                   .Replace("\n", "\\n")
+                   .Replace("\r", "\\r");
     }
     
     private void GenerateHtmlFooter(StringBuilder html)
@@ -1116,6 +1258,177 @@ h3 {
     margin: 5px 0;
 }
 
+/* View Privileges Button */
+.view-privileges-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s;
+}
+
+.view-privileges-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Privilege Details Inline Expansion */
+.privilege-toggle-container {
+    margin: 10px 0;
+}
+
+.privilege-details-container {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #667eea;
+    border-radius: 4px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { 
+        opacity: 0; 
+        max-height: 0;
+        transform: translateY(-10px); 
+    }
+    to { 
+        opacity: 1; 
+        max-height: 1000px;
+        transform: translateY(0); 
+    }
+}
+
+.privilege-table-wrapper {
+    overflow-x: auto;
+}
+
+/* Privilege Legend */
+.privilege-legend {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.privilege-legend h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+}
+
+.legend-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+}
+
+/* Permission Circles - D365 Style */
+.permission-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #2c3e50;
+    display: inline-block;
+    position: relative;
+    background: white;
+}
+
+.permission-circle.level-none {
+    background: white;
+}
+
+.permission-circle.level-user {
+    background: conic-gradient(from 0deg, #4CAF50 0deg 90deg, white 90deg 360deg);
+}
+
+.permission-circle.level-businessunit {
+    background: conic-gradient(from 0deg, #2196F3 0deg 180deg, white 180deg 360deg);
+}
+
+.permission-circle.level-parentchildbusinessunit {
+    background: conic-gradient(from 0deg, #FF9800 0deg 270deg, white 270deg 360deg);
+}
+
+.permission-circle.level-organization {
+    background: #9C27B0;
+}
+
+.permission-circle.level-global {
+    background: #9C27B0;
+}
+
+.permission-circle.level-deep {
+    background: #9C27B0;
+}
+
+.permission-circle.level-local {
+    background: #2196F3;
+}
+
+.permission-circle.level-basic {
+    background: conic-gradient(from 0deg, #4CAF50 0deg 90deg, white 90deg 360deg);
+}
+
+/* Privilege Comparison Table */
+.privilege-comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.privilege-comparison-table thead {
+    background-color: #34495e;
+    color: white;
+    position: sticky;
+    top: 0;
+}
+
+.privilege-comparison-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.privilege-comparison-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.privilege-comparison-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.privilege-comparison-table tbody tr.privilege-changed {
+    background-color: #f9f9f9;
+    border-left: 3px solid #ffc107;
+}
+
+.privilege-comparison-table tbody tr.privilege-changed td:first-child {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.privilege-level-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.privilege-table-container {
+    overflow-x: auto;
+}
+
 @media (max-width: 768px) {
     .tab-nav {
         flex-wrap: wrap;
@@ -1334,6 +1647,25 @@ function filterChangedOnly(checkbox) {
 // Search functionality (placeholder for future enhancement)
 function filterTree(searchText) {
     // TODO: Implement search/filter logic
+}
+
+// Privilege Expansion Functions
+function togglePrivilegeDetails(roleId) {
+    var detailsDiv = document.getElementById('privileges_' + roleId);
+    if (detailsDiv) {
+        if (detailsDiv.style.display === 'none') {
+            detailsDiv.style.display = 'block';
+        } else {
+            detailsDiv.style.display = 'none';
+        }
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 ";
         
