@@ -1,0 +1,106 @@
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26012.156" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26013.00152">
+  <Entities>
+    <Entity>
+      <Name LocalizedName="Account" OriginalName="">Account</Name>
+      <EntityInfo>
+        <entity Name="Account" unmodified="1">
+          <attributes />
+        </entity>
+      </EntityInfo>
+      <RibbonDiffXml>
+        <CustomActions />
+        <Templates>
+          <RibbonTemplates Id="Mscrm.Templates"></RibbonTemplates>
+        </Templates>
+        <CommandDefinitions />
+        <RuleDefinitions>
+          <TabDisplayRules />
+          <DisplayRules />
+          <EnableRules />
+        </RuleDefinitions>
+        <LocLabels />
+      </RibbonDiffXml>
+    </Entity>
+  </Entities>
+  <Roles></Roles>
+  <Workflows></Workflows>
+  <FieldSecurityProfiles></FieldSecurityProfiles>
+  <Templates />
+  <EntityMaps />
+  <EntityRelationships>
+    <EntityRelationship Name="msa_account_managingpartner">
+      <EntityRelationshipType>OneToMany</EntityRelationshipType>
+      <IntroducedVersion>1.0.0.0</IntroducedVersion>
+      <IsHierarchical>0</IsHierarchical>
+      <ReferencingEntityName>Account</ReferencingEntityName>
+      <ReferencedEntityName>Account</ReferencedEntityName>
+      <CascadeAssign>NoCascade</CascadeAssign>
+      <CascadeDelete>RemoveLink</CascadeDelete>
+      <CascadeArchive>NoCascade</CascadeArchive>
+      <CascadeReparent>NoCascade</CascadeReparent>
+      <CascadeShare>NoCascade</CascadeShare>
+      <CascadeUnshare>NoCascade</CascadeUnshare>
+      <CascadeRollupView>NoCascade</CascadeRollupView>
+      <IsValidForAdvancedFind>1</IsValidForAdvancedFind>
+      <ReferencingAttributeName>msa_managingpartnerid</ReferencingAttributeName>
+      <RelationshipDescription>
+        <Descriptions>
+          <Description description="Unique identifier for Account associated with Account." languagecode="1033" />
+        </Descriptions>
+      </RelationshipDescription>
+      <EntityRelationshipRoles>
+        <EntityRelationshipRole>
+          <NavPaneDisplayOption>UseLabel</NavPaneDisplayOption>
+          <NavPaneArea>Details</NavPaneArea>
+          <NavPaneOrder>100400</NavPaneOrder>
+          <NavigationPropertyName>msa_managingpartnerid</NavigationPropertyName>
+          <CustomLabels>
+            <CustomLabel description="Managed Accounts" languagecode="1033" />
+          </CustomLabels>
+          <RelationshipRoleType>1</RelationshipRoleType>
+        </EntityRelationshipRole>
+        <EntityRelationshipRole>
+          <RelationshipRoleType>0</RelationshipRoleType>
+        </EntityRelationshipRole>
+      </EntityRelationshipRoles>
+    </EntityRelationship>
+    <EntityRelationship Name="powerpagecomponent_mspp_webrole_account">
+      <EntityRelationshipType>ManyToMany</EntityRelationshipType>
+      <IntroducedVersion>1.0.0.0</IntroducedVersion>
+      <IsHierarchical>0</IsHierarchical>
+      <FirstEntityName>powerpagecomponent</FirstEntityName>
+      <SecondEntityName>Account</SecondEntityName>
+      <IntersectEntityName>powerpagecomponent_mspp_webrole_account</IntersectEntityName>
+      <IsValidForAdvancedFind>1</IsValidForAdvancedFind>
+      <EntityRelationshipRoles>
+        <EntityRelationshipRole>
+          <NavPaneDisplayOption>DoNotDisplay</NavPaneDisplayOption>
+          <NavPaneArea>Details</NavPaneArea>
+          <NavPaneOrder>100600</NavPaneOrder>
+          <NavigationPropertyName>powerpagecomponent_mspp_webrole_account</NavigationPropertyName>
+          <CustomLabels>
+            <CustomLabel description="" languagecode="1033" />
+          </CustomLabels>
+          <AssociationRoleOrdinal>1</AssociationRoleOrdinal>
+        </EntityRelationshipRole>
+        <EntityRelationshipRole>
+          <NavPaneDisplayOption>UseCollectionName</NavPaneDisplayOption>
+          <NavPaneArea>Details</NavPaneArea>
+          <NavPaneOrder>100100</NavPaneOrder>
+          <NavigationPropertyName>powerpagecomponent_mspp_webrole_account</NavigationPropertyName>
+          <CustomLabels>
+            <CustomLabel description="" languagecode="1033" />
+          </CustomLabels>
+          <AssociationRoleOrdinal>2</AssociationRoleOrdinal>
+        </EntityRelationshipRole>
+      </EntityRelationshipRoles>
+    </EntityRelationship>
+  </EntityRelationships>
+  <OrganizationSettings />
+  <optionsets />
+  <CustomControls />
+  <EntityDataProviders />
+  <Languages>
+    <Language>1033</Language>
+  </Languages>
+</ImportExportXml>
