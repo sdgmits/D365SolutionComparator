@@ -349,7 +349,7 @@ public class HtmlReportGenerator : IReportGenerator
             
             foreach (var attr in attributes)
             {
-                GenerateComponentTreeItem(html, attr);
+                GenerateComponentTableItem(html, attr, solution1Name, solution2Name);
             }
             
             html.AppendLine("                        </ul>");
@@ -357,22 +357,22 @@ public class HtmlReportGenerator : IReportGenerator
         }
         
         // Forms
-        GenerateComponentSection(html, entity, "Form", "📄 Forms");
+        GenerateComponentSection(html, entity, "Form", "📄 Forms", solution1Name, solution2Name);
         
         // Views
-        GenerateComponentSection(html, entity, "View", "👁️ Views");
+        GenerateComponentSection(html, entity, "View", "👁️ Views", solution1Name, solution2Name);
         
         // Relationships
-        GenerateComponentSection(html, entity, "Relationship", "🔗 Relationships");
+        GenerateComponentSection(html, entity, "Relationship", "🔗 Relationships", solution1Name, solution2Name);
         
         // Business Rules
-        GenerateComponentSection(html, entity, "BusinessRule", "⚙️ Business Rules");
+        GenerateComponentSection(html, entity, "BusinessRule", "⚙️ Business Rules", solution1Name, solution2Name);
         
         html.AppendLine("                </ul>");
         html.AppendLine("            </div>");
     }
     
-    private void GenerateComponentSection(StringBuilder html, ComparisonResult parent, string componentType, string displayName)
+    private void GenerateComponentSection(StringBuilder html, ComparisonResult parent, string componentType, string displayName, string solution1Name, string solution2Name)
     {
         var components = parent.ChildComparisons.Where(c => c.ComponentType == componentType).OrderBy(c => c.ComponentName).ToList();
         if (!components.Any()) return;
@@ -391,50 +391,88 @@ public class HtmlReportGenerator : IReportGenerator
         
         foreach (var component in components)
         {
-            GenerateComponentTreeItem(html, component);
+            GenerateComponentTableItem(html, component, solution1Name, solution2Name);
         }
         
         html.AppendLine("                        </ul>");
         html.AppendLine("                    </li>");
     }
     
-    private void GenerateComponentTreeItem(StringBuilder html, ComparisonResult component)
+    private void GenerateComponentTableItem(StringBuilder html, ComparisonResult component, string solution1Name, string solution2Name)
     {
         var icon = GetChangeIcon(component.ChangeType);
         
-        if (component.ChangeType == ChangeType.Added || component.ChangeType == ChangeType.Removed)
+        // Determine if component has changes
+        var hasChanges = component.ChangeType != ChangeType.Unchanged || 
+                        component.PropertyChanges.Any(p => p.Value.IsDifferent);
+        var changeStatusBadge = hasChanges ? " <span style='color: #ffc107; font-weight: bold;'>[Is Changed: ⚠️ Yes]</span>" : 
+                                            " <span style='color: #6c757d;'>[Is Changed: ✅ No]</span>";
+        
+        // Always show components in table format
+        html.AppendLine("                            <li>");
+        html.AppendLine($"                                <span class='tree-toggle'>{icon} {component.ComponentName}{changeStatusBadge}</span>");
+        html.AppendLine("                                <div class='nested'>");
+        
+        // Only show filters if there are properties to filter
+        if (component.PropertyChanges.Any())
         {
-            html.AppendLine($"                            <li class='{component.ChangeType.ToString().ToLower()}'>");
-            html.AppendLine($"                                {icon} {component.ComponentName}");
-            html.AppendLine("                            </li>");
+            html.AppendLine("                                    <div class='table-filter-container'>");
+            html.AppendLine("                                        <input type='text' class='property-filter' placeholder='🔍 Filter properties...' onkeyup='filterPropertyTable(this)' />");
+            html.AppendLine("                                        <label class='filter-checkbox'>");
+            html.AppendLine("                                            <input type='checkbox' class='changed-only-filter' onchange='filterChangedOnly(this)' /> Show changed only");
+            html.AppendLine("                                        </label>");
+            html.AppendLine("                                    </div>");
         }
-        else if (component.PropertyChanges.Any())
+        
+        html.AppendLine("                                    <table class='property-table'>");
+        html.AppendLine("                                        <thead>");
+        html.AppendLine("                                            <tr>");
+        html.AppendLine("                                                <th>Property Name</th>");
+        html.AppendLine($"                                                <th>{EscapeHtml(solution1Name)}</th>");
+        html.AppendLine($"                                                <th>{EscapeHtml(solution2Name)}</th>");
+        html.AppendLine("                                                <th>Is Changed?</th>");
+        html.AppendLine("                                            </tr>");
+        html.AppendLine("                                        </thead>");
+        html.AppendLine("                                        <tbody>");
+        
+        if (component.PropertyChanges.Any())
         {
-            html.AppendLine("                            <li>");
-            html.AppendLine($"                                <span class='tree-toggle'>{icon} {component.ComponentName}</span>");
-            html.AppendLine("                                <ul class='nested'>");
-            
-            foreach (var prop in component.PropertyChanges.Where(p => p.Value.IsDifferent).OrderBy(p => p.Key))
+            // Show all properties for items with property changes
+            foreach (var prop in component.PropertyChanges.OrderBy(p => p.Key))
             {
-                html.AppendLine($"                                    <li class='different'>");
-                html.AppendLine($"                                        ⚠️ <strong>{prop.Key}:</strong> ");
-                html.AppendLine($"                                        <span class='value-comparison'>");
-                html.AppendLine($"                                            <span class='source-value'>{EscapeHtml(prop.Value.SourceValue)}</span>");
-                html.AppendLine($"                                            <span class='arrow'>→</span>");
-                html.AppendLine($"                                            <span class='target-value'>{EscapeHtml(prop.Value.TargetValue)}</span>");
-                html.AppendLine($"                                        </span>");
-                html.AppendLine("                                    </li>");
+                var rowClass = prop.Value.IsDifferent ? "changed-row" : "unchanged-row";
+                var changeIcon = prop.Value.IsDifferent ? "⚠️ Yes" : "✅ No";
+                var changeClass = prop.Value.IsDifferent ? "status-changed" : "status-unchanged";
+                
+                html.AppendLine($"                                            <tr class='{rowClass}'>");
+                html.AppendLine($"                                                <td class='property-name'><strong>{EscapeHtml(prop.Key)}</strong></td>");
+                html.AppendLine($"                                                <td class='value-cell'>{EscapeHtml(prop.Value.SourceValue)}</td>");
+                html.AppendLine($"                                                <td class='value-cell'>{EscapeHtml(prop.Value.TargetValue)}</td>");
+                html.AppendLine($"                                                <td class='{changeClass}'>{changeIcon}</td>");
+                html.AppendLine("                                            </tr>");
             }
-            
-            html.AppendLine("                                </ul>");
-            html.AppendLine("                            </li>");
         }
         else
         {
-            html.AppendLine($"                            <li class='unchanged'>");
-            html.AppendLine($"                                {icon} {component.ComponentName}");
-            html.AppendLine("                            </li>");
+            // For Added/Removed items without property details, show a summary row
+            var statusText = component.ChangeType == ChangeType.Added ? "Added in " + solution2Name : 
+                           component.ChangeType == ChangeType.Removed ? "Removed from " + solution2Name : 
+                           "No changes";
+            var value1 = component.ChangeType == ChangeType.Removed ? "Exists" : "-";
+            var value2 = component.ChangeType == ChangeType.Added ? "Exists" : "-";
+            
+            html.AppendLine($"                                            <tr class='changed-row'>");
+            html.AppendLine($"                                                <td class='property-name'><strong>Status</strong></td>");
+            html.AppendLine($"                                                <td class='value-cell'>{value1}</td>");
+            html.AppendLine($"                                                <td class='value-cell'>{value2}</td>");
+            html.AppendLine($"                                                <td class='status-changed'>⚠️ Yes</td>");
+            html.AppendLine("                                            </tr>");
         }
+        
+        html.AppendLine("                                        </tbody>");
+        html.AppendLine("                                    </table>");
+        html.AppendLine("                                </div>");
+        html.AppendLine("                            </li>");
     }
     
     private void GenerateOtherComponentTabs(StringBuilder html, ComparisonResult result)

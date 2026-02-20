@@ -31,8 +31,8 @@ public class SecurityRoleParser
     {
         var role = new SecurityRoleDefinition
         {
-            RoleId = roleNode.Element("roleid")?.Value ?? Guid.NewGuid().ToString(),
-            Name = roleNode.Element("name")?.Value ?? "Unknown",
+            RoleId = roleNode.Attribute("id")?.Value ?? Guid.NewGuid().ToString(),
+            Name = roleNode.Attribute("name")?.Value ?? "Unknown",
             OriginalXml = roleNode
         };
         
@@ -44,18 +44,18 @@ public class SecurityRoleParser
         {
             foreach (var privNode in privilegeNodes)
             {
-                var entityName = privNode.Attribute("name")?.Value;
-                var privilegeType = privNode.Attribute("privilegeType")?.Value;
-                var depth = GetPrivilegeDepth(privNode.Attribute("depth")?.Value);
+                var privilegeName = privNode.Attribute("name")?.Value;
+                var level = privNode.Attribute("level")?.Value ?? "Unknown";
                 
-                if (!string.IsNullOrEmpty(entityName) && !string.IsNullOrEmpty(privilegeType))
+                if (!string.IsNullOrEmpty(privilegeName))
                 {
-                    if (!privileges.ContainsKey(entityName))
+                    // For display purposes, group by privilege name
+                    if (!privileges.ContainsKey(privilegeName))
                     {
-                        privileges[entityName] = new Dictionary<string, string>();
+                        privileges[privilegeName] = new Dictionary<string, string>();
                     }
                     
-                    privileges[entityName][privilegeType] = depth;
+                    privileges[privilegeName]["Level"] = level;
                 }
             }
         }
