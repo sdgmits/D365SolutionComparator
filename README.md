@@ -107,48 +107,12 @@ SolutionComparison/
 ├── D365SolutionComparator.csproj
 ├── Program.cs                          # Main entry point
 ├── Models/                             # Data models
-│   ├── ChangeType.cs
-│   ├── PropertyChange.cs
-│   ├── ComparisonResult.cs
-│   ├── SolutionInfo.cs
-│   ├── EntityDefinition.cs
-│   ├── AttributeDefinition.cs
-│   ├── FormDefinition.cs
-│   ├── ViewDefinition.cs
-│   ├── RelationshipDefinition.cs
-│   ├── BusinessRuleDefinition.cs
-│   ├── WebResourceDefinition.cs
-│   ├── ProcessDefinition.cs
-│   ├── OptionSetDefinition.cs
-│   ├── SecurityRoleDefinition.cs
-│   └── AppModuleDefinition.cs
+│   ├── *.cs
 ├── Parsers/                            # XML parsing
-│   ├── SolutionExtractor.cs
-│   ├── CustomizationsXmlParser.cs
-│   ├── EntityParser.cs
-│   ├── AttributeParser.cs
-│   ├── FormParser.cs
-│   ├── ViewParser.cs
-│   ├── RelationshipParser.cs
-│   ├── WebResourceParser.cs
-│   ├── ProcessParser.cs
-│   ├── OptionSetParser.cs
-│   ├── SecurityRoleParser.cs
-│   └── AppModuleParser.cs
+│   ├── *Parser.cs
 ├── Comparers/                          # Comparison logic
 │   ├── IComparer.cs
-│   ├── SolutionComparator.cs
-│   ├── EntityComparer.cs
-│   ├── AttributeComparer.cs
-│   ├── FormComparer.cs
-│   ├── ViewComparer.cs
-│   ├── RelationshipComparer.cs
-│   ├── BusinessRuleComparer.cs
-│   ├── WebResourceComparer.cs
-│   ├── ProcessComparer.cs
-│   ├── OptionSetComparer.cs
-│   ├── SecurityRoleComparer.cs
-│   └── AppModuleComparer.cs
+│   ├── *Solution*Comparator.cs
 ├── ReportGenerators/                   # HTML generation
 │   ├── IReportGenerator.cs
 │   └── HtmlReportGenerator.cs
@@ -223,9 +187,6 @@ This project is provided as-is for comparison purposes.
 
 ### Error: ".NET SDK not installed"
 **Solution**: Install .NET 8.0 SDK from https://dotnet.microsoft.com/download
-
-### Report shows "0 entities"
-**Solution**: Verify the solution export contains entity customizations
 
 ### Large solutions are slow
 **Solution**: This is expected for solutions with many components. Consider filtering or splitting the solution.
