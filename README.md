@@ -27,17 +27,43 @@ A comprehensive C# .NET 8 console application for comparing two Dynamics 365 CE 
 
 ## 📋 Prerequisites
 
+### Option 1: Standalone Executable (Recommended for End Users)
+- **No prerequisites** - Download the pre-built executable for your platform
+- Works without installing .NET or any development tools
+- See [DISTRIBUTION.md](DISTRIBUTION.md) for building standalone executables
+
+### Option 2: Building from Source
 - .NET 8.0 SDK or later
 - Windows, macOS, or Linux
 
 ## 🚀 Installation
+
+### Option A: Use Pre-Built Executable (No .NET Required)
+
+1. **Download** the appropriate executable for your platform from the releases or build it yourself:
+   ```bash
+   # On Windows
+   publish-windows.bat
+   ```
+2. **Run directly** without any installation:
+   ```bash
+   # Windows
+   D365SolutionComparator.exe -s1 solution1.zip -s2 solution2.zip
+   
+   # Linux/macOS
+   ./D365SolutionComparator -s1 solution1.zip -s2 solution2.zip
+   ```
+
+See [DISTRIBUTION.md](DISTRIBUTION.md) for detailed instructions on building self-contained executables.
+
+### Option B: Build from Source (Requires .NET SDK)
 
 1. **Clone or download** this repository
 2. **Navigate** to the project directory:
    ```bash
    cd SolutionComparison
    ```
-3. **Restore dependencies** (if .NET SDK is installed):
+3. **Restore dependencies**:
    ```bash
    dotnet restore
    ```
@@ -48,7 +74,17 @@ A comprehensive C# .NET 8 console application for comparing two Dynamics 365 CE 
 
 ## 📖 Usage
 
-### Basic Command
+### Using Standalone Executable (No .NET Required)
+
+```bash
+# Windows
+D365SolutionComparator.exe --source1 "path/to/solution1.zip" --source2 "path/to/solution2.zip" --output "report.html"
+
+# Linux/macOS
+./D365SolutionComparator --source1 "path/to/solution1.zip" --source2 "path/to/solution2.zip" --output "report.html"
+```
+
+### Using .NET SDK
 
 ```bash
 dotnet run -- --source1 "path/to/solution1.zip" --source2 "path/to/solution2.zip" --output "report.html"
@@ -65,7 +101,16 @@ dotnet run -- --source1 "path/to/solution1.zip" --source2 "path/to/solution2.zip
 
 ### Examples
 
-**Compare two ZIP files:**
+**Standalone executable - Compare two ZIP files:**
+```bash
+# Windows
+D365SolutionComparator.exe -s1 "DevSolution_1_0_0_1.zip" -s2 "ProdSolution_1_0_0_2.zip" -o "comparison.html"
+
+# Linux/macOS
+./D365SolutionComparator -s1 "DevSolution_1_0_0_1.zip" -s2 "ProdSolution_1_0_0_2.zip" -o "comparison.html"
+```
+
+**Using .NET SDK - Compare two ZIP files:**
 ```bash
 dotnet run -- -s1 "DevSolution_1_0_0_1.zip" -s2 "ProdSolution_1_0_0_2.zip" -o "comparison.html"
 ```
