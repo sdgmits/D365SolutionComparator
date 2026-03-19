@@ -47,6 +47,9 @@ styles.css
 script.js
 *.zip
 
+# Published self-contained executables
+publish/
+
 # Temporary files
 *.tmp
 *.temp
